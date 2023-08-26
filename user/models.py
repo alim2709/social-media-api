@@ -66,33 +66,54 @@ def profile_picture_file_path(instance, filename):
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
+    )
     username = models.CharField(max_length=255, unique=True)
-    picture = models.ImageField(null=True, upload_to=profile_picture_file_path, blank=True)
+    picture = models.ImageField(
+        null=True, upload_to=profile_picture_file_path, blank=True
+    )
     bio = models.TextField()
-    followers = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="profiles_followers")
-    following = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="profiles_following")
+    followers = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, related_name="profiles_followers", blank=True
+    )
+    following = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, related_name="profiles_following", blank=True
+    )
 
     class Meta:
-        ordering = ("username", )
+        ordering = ("username",)
 
     def __str__(self):
         return self.username
 
 
 class Like(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="likes")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="likes",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
-    post = models.ForeignKey("Post", on_delete=models.SET_NULL, null=True, related_name="likes")
-    comment = models.ForeignKey("Comment", on_delete=models.SET_NULL, null=True, related_name="likes")
+    post = models.ForeignKey(
+        "Post", on_delete=models.SET_NULL, null=True, related_name="likes"
+    )
+    comment = models.ForeignKey(
+        "Comment", on_delete=models.SET_NULL, null=True, related_name="likes"
+    )
 
     def __str__(self):
         return f"Liked at: {self.created_at}"
 
 
 class Comment(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="comments")
-    post = models.ForeignKey("Post", on_delete=models.CASCADE, null=True, related_name="comments")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="comments"
+    )
+    post = models.ForeignKey(
+        "Post", on_delete=models.CASCADE, null=True, related_name="comments"
+    )
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -108,7 +129,9 @@ class HashTag(models.Model):
 
 
 class Post(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     title = models.CharField(max_length=60, unique=True)
     text = models.TextField()
