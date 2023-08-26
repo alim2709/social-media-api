@@ -5,11 +5,6 @@ from django.utils.translation import gettext as _
 from user.models import User, Profile, Like, Comment, HashTag, Post
 
 
-class ProfileInline(admin.StackedInline):
-    model = Profile
-    extra = 1
-
-
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     """Define admin model for custom User model with no email field."""
@@ -43,9 +38,9 @@ class UserAdmin(DjangoUserAdmin):
     list_display = ("email", "first_name", "last_name", "is_staff")
     search_fields = ("email", "first_name", "last_name")
     ordering = ("email",)
-    inlines = (ProfileInline,)
 
 
+admin.site.register(Profile)
 admin.site.register(Like)
 admin.site.register(Comment)
 admin.site.register(HashTag)
