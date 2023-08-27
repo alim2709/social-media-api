@@ -61,7 +61,7 @@ class User(AbstractUser):
 
 def profile_picture_file_path(instance, filename):
     _, extension = os.path.splitext(filename)
-    filename = f"{slugify(instance.name)}-{uuid.uuid4()}.{extension}"
+    filename = f"{slugify(instance.username)}-{uuid.uuid4()}.{extension}"
     return os.path.join("uploads/pictures/", filename)
 
 
