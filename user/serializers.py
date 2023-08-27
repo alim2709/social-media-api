@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from user.models import Profile, User
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,3 +25,42 @@ class UserSerializer(serializers.ModelSerializer):
             user.save()
 
         return user
+
+
+class FollowsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("email",)
+        list_serializer_class = serializers.ListSerializer
+
+    def to_representation(self, instance):
+        return instance.email
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ("username", "bio")
+
+
+class ProfilePictureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = (
+            "id",
+            "picture",
+        )
+
+
+class ProfileListSerializer(ProfileSerializer):
+    followers = FollowsSerializer(many=True, read_only=True)
+    following = FollowsSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = ("id", "username", "picture", "bio", "followers", "following")
+        read_only_fields = ("id", "picture")
+
+
+class ProfileDetailSerializer(ProfileListSerializer):
+    pass
