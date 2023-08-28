@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from user.models import Profile, User, HashTag
+from user.models import Profile, User, HashTag, Post
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -70,3 +70,17 @@ class HashTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = HashTag
         fields = ("name",)
+
+
+class PostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ("title", "text", "hashtag", "created_at")
+
+
+class PostListSerializer(PostSerializer):
+    hashtag = serializers.SlugRelatedField(many=True, read_only=True, slug_field="name")
+
+    class Meta:
+        model = Post
+        fields = ("user", "title", "text", "comments", "likes", "hashtag", "created_at")
