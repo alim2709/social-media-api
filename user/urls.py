@@ -1,11 +1,12 @@
 from django.urls import path, include
 
-from user.views import CreateUserView, ProfileViewSet, HashTagViewSet
+from user.views import CreateUserView, ProfileViewSet, HashTagViewSet, PostViewSet
 from rest_framework import routers
 
 router = routers.DefaultRouter()
 router.register("profiles", ProfileViewSet)
 router.register("hashtags", HashTagViewSet)
+router.register("posts", PostViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
