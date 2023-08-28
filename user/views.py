@@ -1,4 +1,3 @@
-from django.db import IntegrityError
 from django.db.models import Q
 from rest_framework import generics, viewsets, status
 from rest_framework.decorators import action
@@ -15,10 +14,9 @@ from user.serializers import (
     HashTagSerializer,
     PostSerializer,
     PostListSerializer,
+    FollowersProfileSerializer,
+    FollowingProfileSerializer,
 )
-
-
-# ProfileListSerializer)
 
 
 class CreateUserView(generics.CreateAPIView):
@@ -47,10 +45,28 @@ class ProfileViewSet(viewsets.ModelViewSet):
             return ProfileDetailSerializer
         if self.action == "upload_picture":
             return ProfilePictureSerializer
+        if self.action == "profile_followers":
+            return FollowersProfileSerializer
+        if self.action == "profile_followings":
+            return FollowingProfileSerializer
         return ProfileSerializer
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(methods=["GET"], detail=True, url_path="profile_followers")
+    def profile_followers(self, request, pk=None):
+        """Endpoint for list of profile followers"""
+        profile = self.get_object()
+        serializer = self.get_serializer(profile, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=["GET"], detail=True, url_path="profile_followings")
+    def profile_followings(self, request, pk=None):
+        """Endpoint for list of profile followings"""
+        profile = self.get_object()
+        serializer = self.get_serializer(profile, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
         methods=["POST"],
