@@ -4,13 +4,14 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from user.models import Profile
+from user.models import Profile, HashTag
 from user.serializers import (
     UserSerializer,
     ProfileListSerializer,
     ProfileDetailSerializer,
     ProfileSerializer,
     ProfilePictureSerializer,
+    HashTagSerializer,
 )
 
 
@@ -77,3 +78,8 @@ class ProfileViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class HashTagViewSet(viewsets.ModelViewSet):
+    queryset = HashTag.objects.all()
+    serializer_class = HashTagSerializer
