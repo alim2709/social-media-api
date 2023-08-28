@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from user.models import Profile, User
+from user.models import Profile, User, HashTag
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -64,3 +64,9 @@ class ProfileListSerializer(ProfileSerializer):
 
 class ProfileDetailSerializer(ProfileListSerializer):
     pass
+
+
+class HashTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HashTag
+        fields = ("name",)
