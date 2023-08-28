@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from user.models import Profile, HashTag
+from user.models import Profile, HashTag, Post
 from user.serializers import (
     UserSerializer,
     ProfileListSerializer,
@@ -12,6 +12,8 @@ from user.serializers import (
     ProfileSerializer,
     ProfilePictureSerializer,
     HashTagSerializer,
+    PostSerializer,
+    PostListSerializer,
 )
 
 
@@ -83,3 +85,16 @@ class ProfileViewSet(viewsets.ModelViewSet):
 class HashTagViewSet(viewsets.ModelViewSet):
     queryset = HashTag.objects.all()
     serializer_class = HashTagSerializer
+
+
+class PostViewSet(viewsets.ModelViewSet):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return PostListSerializer
+        return PostSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
