@@ -43,6 +43,22 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = ("username", "bio")
 
 
+class FollowersProfileSerializer(serializers.ModelSerializer):
+    followers = FollowsSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = ("followers",)
+
+
+class FollowingProfileSerializer(serializers.ModelSerializer):
+    following = FollowsSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = ("following",)
+
+
 class ProfilePictureSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
