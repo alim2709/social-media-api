@@ -1,4 +1,5 @@
 from django.db import IntegrityError
+from django.db.models import Q
 from rest_framework import generics, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -95,6 +96,21 @@ class PostViewSet(viewsets.ModelViewSet):
         if self.action == "list":
             return PostListSerializer
         return PostSerializer
+
+    def get_queryset(self):
+        queryset = self.queryset
+        following_users = self.request.user.profiles_following.all()
+        queryset = queryset.filter(
+            Q(user=self.request.user) | Q(user__in=list(following_users))
+        )
+        """Filtering posts by title & hashtags"""
+        title = self.request.query_params.get("title")
+        hashtag = self.request.query_params.get("hashtag")
+        if title:
+            queryset = queryset.filter(title__icontains=title)
+        if hashtag:
+            queryset = queryset.filter(hashtag__name__icontains=hashtag)
+        return queryset.distinct()
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
