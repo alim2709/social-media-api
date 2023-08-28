@@ -26,6 +26,16 @@ class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
 
+    def get_queryset(self):
+        queryset = self.queryset
+
+        """Filtering by username"""
+
+        username = self.request.query_params.get("username")
+        if username:
+            queryset = queryset.filter(username__icontains=username)
+        return queryset.distinct()
+
     def get_serializer_class(self):
         if self.action == "list":
             return ProfileListSerializer
