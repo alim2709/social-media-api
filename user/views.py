@@ -21,6 +21,7 @@ from user.serializers import (
     CommentListSerializer,
     CommentDetailSerializer,
     PostLikeSerializer,
+    CommentLikeSerializer,
 )
 
 
@@ -164,7 +165,23 @@ class CommentViewSet(viewsets.ModelViewSet):
             return CommentListSerializer
         if self.action == "retrieve":
             return CommentDetailSerializer
+        if self.action == "comment_like_unlike":
+            return CommentLikeSerializer
         return CommentSerializer
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(methods=["POST"], detail=True, url_path="comment_like_unlike")
+    def comment_like_unlike(self, request, pk=None):
+        """Endpoint for like/unlike comments"""
+        comment = self.get_object()
+        user = self.request.user
+        serializer = self.get_serializer(comment, data=request.data)
+        if not comment.likes.filter(user=user).exists():
+            Like.objects.create(user=user, comment=comment)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        comment.likes.filter(user=user).delete()
+        return Response({"status": "unliked comment"})
