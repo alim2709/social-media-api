@@ -104,7 +104,7 @@ class Like(models.Model):
     )
 
     def __str__(self):
-        return f"Liked at: {self.created_at}"
+        return f"Liked at: {self.created_at} by {self.user}"
 
 
 class Comment(models.Model):
