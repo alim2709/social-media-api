@@ -117,6 +117,7 @@ class PostDetailSerializer(PostSerializer):
     comments = serializers.SlugRelatedField(
         many=True, read_only=True, slug_field="text"
     )
+    likes = serializers.StringRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Post
@@ -146,10 +147,6 @@ class CommentListSerializer(CommentSerializer):
         fields = ("id", "post", "text", "likes", "created_at")
 
 
-class CommentDetailSerializer(CommentSerializer):
-    post = PostDetailSerializer(many=False, read_only=True)
-
-
 class LikePostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Like
@@ -168,3 +165,20 @@ class PostLikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ("likes",)
+
+
+class CommentLikeSerializer(serializers.ModelSerializer):
+    likes = LikeCommentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ("likes",)
+
+
+class CommentDetailSerializer(CommentSerializer):
+    post = PostDetailSerializer(many=False, read_only=True)
+    likes = serializers.StringRelatedField(many=True, read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ("id", "post", "text", "likes", "created_at")
