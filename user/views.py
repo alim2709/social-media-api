@@ -127,7 +127,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = self.queryset
-        following_users = self.request.user.profiles_following.all()
+        following_users = self.request.user.profile.following.all()
         queryset = queryset.filter(
             Q(user=self.request.user) | Q(user__in=list(following_users))
         )
@@ -161,6 +161,14 @@ class PostViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+
+    def get_queryset(self):
+        queryset = self.queryset
+        following_users = self.request.user.profile.following.all()
+        queryset = queryset.filter(
+            Q(user=self.request.user) | Q(user__in=list(following_users))
+        )
+        return queryset
 
     def get_serializer_class(self):
         if self.action == "list":
