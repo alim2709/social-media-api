@@ -1,5 +1,5 @@
 from django.db.models import Q
-from rest_framework import generics, viewsets, status
+from rest_framework import generics, viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -22,6 +22,8 @@ from user.serializers import (
     CommentDetailSerializer,
     PostLikeSerializer,
     CommentLikeSerializer,
+    LikeListPostSerializer,
+    LikeListCommentSerializer,
 )
 
 
@@ -185,3 +187,25 @@ class CommentViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         comment.likes.filter(user=user).delete()
         return Response({"status": "unliked comment"})
+
+
+class LikedListPostsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericViewSet):
+    queryset = Like.objects.all()
+    serializer_class = LikeListPostSerializer
+
+    def get_queryset(self):
+        queryset = self.queryset
+        user = self.request.user
+        queryset = queryset.filter(comment__isnull=True, user=user)
+        return queryset
+
+
+class LikedListCommentsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericViewSet):
+    queryset = Like.objects.all()
+    serializer_class = LikeListCommentSerializer
+
+    def get_queryset(self):
+        queryset = self.queryset
+        user = self.request.user
+        queryset = queryset.filter(post__isnull=True, user=user)
+        return queryset
