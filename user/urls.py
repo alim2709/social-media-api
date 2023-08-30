@@ -6,6 +6,8 @@ from user.views import (
     HashTagViewSet,
     PostViewSet,
     CommentViewSet,
+    LikedListPostsProfileOnlyView,
+    LikedListCommentsProfileOnlyView,
 )
 from rest_framework import routers
 
@@ -14,6 +16,9 @@ router.register("profiles", ProfileViewSet)
 router.register("hashtags", HashTagViewSet)
 router.register("posts", PostViewSet)
 router.register("comments", CommentViewSet)
+router.register("likes-list-post", LikedListPostsProfileOnlyView)
+router.register("likes-list-comment", LikedListCommentsProfileOnlyView)
+
 
 urlpatterns = [
     path("", include(router.urls)),
