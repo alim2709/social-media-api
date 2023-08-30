@@ -137,5 +137,13 @@ class Post(models.Model):
     text = models.TextField()
     hashtag = models.ManyToManyField(HashTag, related_name="posts")
 
+    @property
+    def number_of_comments(self):
+        return self.comments.all().count()
+
+    @property
+    def num_likes(self):
+        return self.likes.all().count()
+
     def __str__(self):
         return self.title
