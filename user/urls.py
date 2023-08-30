@@ -5,6 +5,7 @@ from user.views import (
     ProfileViewSet,
     HashTagViewSet,
     PostViewSet,
+    CommentViewSet,
 )
 from rest_framework import routers
 
@@ -12,6 +13,7 @@ router = routers.DefaultRouter()
 router.register("profiles", ProfileViewSet)
 router.register("hashtags", HashTagViewSet)
 router.register("posts", PostViewSet)
+router.register("comments", CommentViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
