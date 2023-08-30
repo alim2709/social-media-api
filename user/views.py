@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from user.models import Profile, HashTag, Post
+from user.models import Profile, HashTag, Post, Comment, Like
 from user.serializers import (
     UserSerializer,
     ProfileListSerializer,
@@ -16,6 +16,11 @@ from user.serializers import (
     PostListSerializer,
     FollowersProfileSerializer,
     FollowingProfileSerializer,
+    CommentSerializer,
+    PostDetailSerializer,
+    CommentListSerializer,
+    CommentDetailSerializer,
+    PostLikeSerializer,
 )
 
 
@@ -111,6 +116,10 @@ class PostViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             return PostListSerializer
+        if self.action == "retrieve":
+            return PostDetailSerializer
+        if self.action == "post_like_unlike":
+            return PostLikeSerializer
         return PostSerializer
 
     def get_queryset(self):
@@ -127,6 +136,35 @@ class PostViewSet(viewsets.ModelViewSet):
         if hashtag:
             queryset = queryset.filter(hashtag__name__icontains=hashtag)
         return queryset.distinct()
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(methods=["POST"], detail=True, url_path="post_like_unlike")
+    def post_like_unlike(self, request, pk=None):
+        """Endpoint for like/unlike posts"""
+        post = self.get_object()
+        user = self.request.user
+        serializer = self.get_serializer(post, data=request.data)
+        if not post.likes.filter(user=user).exists():
+            Like.objects.create(user=user, post=post)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        post.likes.filter(user=user).delete()
+        return Response({"status": "unliked"})
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return CommentListSerializer
+        if self.action == "retrieve":
+            return CommentDetailSerializer
+        return CommentSerializer
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
