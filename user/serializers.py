@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from user.models import Profile, User, HashTag, Post
+from user.models import Profile, User, HashTag, Post, Comment, Like
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -40,7 +40,7 @@ class FollowsSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ("username", "bio")
+        fields = ("id", "username", "bio")
 
 
 class FollowersProfileSerializer(serializers.ModelSerializer):
@@ -91,12 +91,80 @@ class HashTagSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ("title", "text", "hashtag", "created_at")
+        fields = ("id", "title", "text", "hashtag", "created_at")
 
 
 class PostListSerializer(PostSerializer):
     hashtag = serializers.SlugRelatedField(many=True, read_only=True, slug_field="name")
+    comments_count = serializers.IntegerField(source="number_of_comments")
+    likes_count = serializers.IntegerField(source="num_likes")
 
     class Meta:
         model = Post
-        fields = ("user", "title", "text", "comments", "likes", "hashtag", "created_at")
+        fields = (
+            "id",
+            "user",
+            "title",
+            "text",
+            "comments_count",
+            "likes_count",
+            "hashtag",
+            "created_at",
+        )
+
+
+class PostDetailSerializer(PostSerializer):
+    comments = serializers.SlugRelatedField(
+        many=True, read_only=True, slug_field="text"
+    )
+
+    class Meta:
+        model = Post
+        fields = (
+            "id",
+            "user",
+            "title",
+            "text",
+            "comments",
+            "likes",
+            "hashtag",
+            "created_at",
+        )
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ("id", "post", "text", "created_at")
+
+
+class CommentListSerializer(CommentSerializer):
+    post = serializers.SlugRelatedField(many=False, read_only=True, slug_field="title")
+
+    class Meta:
+        model = Comment
+        fields = ("id", "post", "text", "likes", "created_at")
+
+
+class CommentDetailSerializer(CommentSerializer):
+    post = PostDetailSerializer(many=False, read_only=True)
+
+
+class LikePostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = ("id", "user", "created_at")
+
+
+class LikeCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = ("id", "comment", "created_at")
+
+
+class PostLikeSerializer(serializers.ModelSerializer):
+    likes = LikePostSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Post
+        fields = ("likes",)
