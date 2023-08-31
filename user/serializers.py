@@ -118,8 +118,8 @@ class PostSerializer(serializers.ModelSerializer):
 class PostListSerializer(PostSerializer):
     user = serializers.StringRelatedField(many=False, read_only=True)
     hashtag = serializers.SlugRelatedField(many=True, read_only=True, slug_field="name")
-    comments_count = serializers.IntegerField(source="number_of_comments")
-    likes_count = serializers.IntegerField(source="num_likes")
+    comments_count = serializers.IntegerField(read_only=True)
+    likes_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Post
@@ -218,7 +218,9 @@ class LikeListPostSerializer(serializers.ModelSerializer):
 
 
 class LikeListCommentSerializer(serializers.ModelSerializer):
-    comment = CommentListSerializer(many=False, read_only=True)
+    comment = serializers.SlugRelatedField(
+        many=False, read_only=True, slug_field="text"
+    )
 
     class Meta:
         model = Like
