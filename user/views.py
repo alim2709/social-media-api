@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Q, Count
 from rest_framework import generics, viewsets, status, mixins
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
@@ -59,7 +59,7 @@ class LogoutView(APIView):
             refresh_token = request.data["refresh_token"]
             token = RefreshToken(refresh_token)
             token.blacklist()
-
+            request.user.auth_token.delete()
             return Response(status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -78,7 +78,11 @@ class ProfileViewSet(viewsets.ModelViewSet):
         username = self.request.query_params.get("username")
         if username:
             queryset = queryset.filter(username__icontains=username)
-        return queryset.distinct()
+        return (
+            queryset.select_related("user")
+            .prefetch_related("following", "followers")
+            .distinct()
+        )
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -164,9 +168,13 @@ class PostViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = self.queryset
         following_users = self.request.user.profile.following.all()
-        queryset = queryset.filter(
+        queryset = queryset.select_related("user__profile").filter(
             Q(user=self.request.user) | Q(user__in=list(following_users))
         )
+        if self.action == "list":
+            queryset = queryset.select_related("user").annotate(
+                comments_count=Count("comments"), likes_count=Count("likes")
+            )
         """Filtering posts by title & hashtags"""
         title = self.request.query_params.get("title")
         hashtag = self.request.query_params.get("hashtag")
@@ -174,7 +182,7 @@ class PostViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(title__icontains=title)
         if hashtag:
             queryset = queryset.filter(hashtag__name__icontains=hashtag)
-        return queryset.distinct()
+        return queryset.select_related("user").prefetch_related("hashtag").distinct()
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -205,7 +213,9 @@ class CommentViewSet(viewsets.ModelViewSet):
         queryset = queryset.filter(
             Q(user=self.request.user) | Q(user__in=list(following_users))
         )
-        return queryset
+        return queryset.select_related("post__user").prefetch_related(
+            "likes__user",
+        )
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -242,7 +252,9 @@ class LikedListPostsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericViewS
     def get_queryset(self):
         queryset = self.queryset
         user = self.request.user
-        queryset = queryset.filter(comment__isnull=True, user=user)
+        queryset = queryset.select_related("post__user").filter(
+            comment__isnull=True, user=user
+        )
         return queryset
 
 
@@ -254,5 +266,7 @@ class LikedListCommentsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericVi
     def get_queryset(self):
         queryset = self.queryset
         user = self.request.user
-        queryset = queryset.filter(post__isnull=True, user=user)
+        queryset = queryset.filter(post__isnull=True, user=user).select_related(
+            "comment__post__user"
+        )
         return queryset
