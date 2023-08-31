@@ -1,5 +1,6 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from user.models import Profile, User, HashTag, Post, Comment, Like
 
@@ -25,6 +26,26 @@ class UserSerializer(serializers.ModelSerializer):
             user.save()
 
         return user
+
+
+class AuthTokenSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        password = attrs.get("password")
+
+        if email and password:
+            user = authenticate(email=email, password=password)
+
+            if not user:
+                raise ValidationError("Unable to log in with provided credentials.")
+        else:
+            raise ValidationError("Must include 'email' and 'password'.")
+
+        attrs["user"] = user
+        return attrs
 
 
 class FollowsSerializer(serializers.ModelSerializer):
@@ -95,6 +116,7 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class PostListSerializer(PostSerializer):
+    user = serializers.StringRelatedField(many=False, read_only=True)
     hashtag = serializers.SlugRelatedField(many=True, read_only=True, slug_field="name")
     comments_count = serializers.IntegerField(source="number_of_comments")
     likes_count = serializers.IntegerField(source="num_likes")
@@ -114,6 +136,8 @@ class PostListSerializer(PostSerializer):
 
 
 class PostDetailSerializer(PostSerializer):
+    user = serializers.StringRelatedField(many=False, read_only=True)
+    hashtag = serializers.SlugRelatedField(many=True, read_only=True, slug_field="name")
     comments = serializers.SlugRelatedField(
         many=True, read_only=True, slug_field="text"
     )
@@ -141,6 +165,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class CommentListSerializer(CommentSerializer):
     post = serializers.SlugRelatedField(many=False, read_only=True, slug_field="title")
+    likes = serializers.StringRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Comment
@@ -185,12 +210,16 @@ class CommentDetailSerializer(CommentSerializer):
 
 
 class LikeListPostSerializer(serializers.ModelSerializer):
+    post = serializers.SlugRelatedField(many=False, read_only=True, slug_field="title")
+
     class Meta:
         model = Like
         fields = ("id", "post", "created_at")
 
 
 class LikeListCommentSerializer(serializers.ModelSerializer):
+    comment = CommentListSerializer(many=False, read_only=True)
+
     class Meta:
         model = Like
         fields = ("id", "comment", "created_at")
