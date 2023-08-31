@@ -1,10 +1,15 @@
 from django.db.models import Q
 from rest_framework import generics, viewsets, status, mixins
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from user.models import Profile, HashTag, Post, Comment, Like
+from user.permissions import IsOwnerOrReadOnly
 from user.serializers import (
     UserSerializer,
     ProfileListSerializer,
@@ -24,6 +29,7 @@ from user.serializers import (
     CommentLikeSerializer,
     LikeListPostSerializer,
     LikeListCommentSerializer,
+    AuthTokenSerializer,
 )
 
 
@@ -32,9 +38,37 @@ class CreateUserView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
 
 
+class CreateTokenView(ObtainAuthToken):
+    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+    serializer_class = AuthTokenSerializer
+
+
+class ManageUserView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_object(self):
+        return self.request.user
+
+
+class LogoutView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        try:
+            refresh_token = request.data["refresh_token"]
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+
+            return Response(status=status.HTTP_205_RESET_CONTENT)
+        except Exception as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
+    permission_classes = (IsOwnerOrReadOnly, IsAuthenticated)
 
     def get_queryset(self):
         queryset = self.queryset
@@ -110,11 +144,13 @@ class ProfileViewSet(viewsets.ModelViewSet):
 class HashTagViewSet(viewsets.ModelViewSet):
     queryset = HashTag.objects.all()
     serializer_class = HashTagSerializer
+    permission_classes = (IsAuthenticated,)
 
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
+    permission_classes = (IsOwnerOrReadOnly, IsAuthenticated)
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -161,6 +197,7 @@ class PostViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
+    permission_classes = (IsOwnerOrReadOnly, IsAuthenticated)
 
     def get_queryset(self):
         queryset = self.queryset
@@ -200,6 +237,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 class LikedListPostsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeListPostSerializer
+    permission_classes = (IsOwnerOrReadOnly, IsAuthenticated)
 
     def get_queryset(self):
         queryset = self.queryset
@@ -211,6 +249,7 @@ class LikedListPostsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericViewS
 class LikedListCommentsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeListCommentSerializer
+    permission_classes = (IsOwnerOrReadOnly, IsAuthenticated)
 
     def get_queryset(self):
         queryset = self.queryset
