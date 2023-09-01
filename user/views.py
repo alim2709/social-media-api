@@ -1,4 +1,5 @@
 from django.db.models import Q, Count
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, viewsets, status, mixins
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
@@ -51,6 +52,7 @@ class ManageUserView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
+@extend_schema(description="Endpoint for logout user from the system")
 class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -65,6 +67,9 @@ class LogoutView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    description="This endpoint gives user opportunity to manage own profile and view others"
+)
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
@@ -145,12 +150,14 @@ class ProfileViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema(description="Endpoint for managing hashtags")
 class HashTagViewSet(viewsets.ModelViewSet):
     queryset = HashTag.objects.all()
     serializer_class = HashTagSerializer
     permission_classes = (IsAuthenticated,)
 
 
+@extend_schema(description="Endpoint for managing Posts")
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
@@ -201,7 +208,26 @@ class PostViewSet(viewsets.ModelViewSet):
         post.likes.filter(user=user).delete()
         return Response({"status": "unliked"})
 
+    # Only for documentation purposes
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "title",
+                type={"type": "string"},
+                description="Filter by source  (ex. ?title=ka)",
+            ),
+            OpenApiParameter(
+                "hashtag",
+                type={"type": "string"},
+                description="Filter by hashtag  (ex. ?hashtag=pa)",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
+
+@extend_schema(description="Endpoint for managing comments")
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
@@ -244,6 +270,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Response({"status": "unliked comment"})
 
 
+@extend_schema(description="Endpoint for looking user's liked posts")
 class LikedListPostsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeListPostSerializer
@@ -258,6 +285,7 @@ class LikedListPostsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericViewS
         return queryset
 
 
+@extend_schema(description="Endpoint for looking user's liked comments")
 class LikedListCommentsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeListCommentSerializer
