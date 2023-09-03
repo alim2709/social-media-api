@@ -196,6 +196,7 @@ class PostViewSet(viewsets.ModelViewSet):
         queryset = queryset.select_related("user__profile").filter(
             Q(user=self.request.user) | Q(user__in=following_users)
         )
+
         if self.action == "list":
             queryset = queryset.select_related("user").annotate(
                 comments_count=Count("comments"), likes_count=Count("likes")
