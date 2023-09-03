@@ -4,14 +4,14 @@ from rest_framework import generics, viewsets, status, mixins
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from user.models import Profile, HashTag, Post, Comment, Like
-from user.permissions import IsOwnerOrReadOnly
+from user.permissions import IsOwnerOrIsAdminOrReadOnly
 from user.serializers import (
     UserSerializer,
     ProfileListSerializer,
@@ -74,7 +74,7 @@ class LogoutView(APIView):
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
-    permission_classes = (IsOwnerOrReadOnly, IsAuthenticated)
+    permission_classes = (IsOwnerOrIsAdminOrReadOnly, IsAuthenticated)
 
     def get_queryset(self):
         queryset = self.queryset
@@ -141,6 +141,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
         methods=["POST"],
         detail=True,
         url_path="follow_unfollow",
+        permission_classes=[IsAuthenticated],
     )
     def follow_unfollow(self, request, pk=None):
         """Endpoint for following & unfollowing profile"""
@@ -182,7 +183,7 @@ class HashTagViewSet(viewsets.ModelViewSet):
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = (IsOwnerOrReadOnly, IsAuthenticated)
+    permission_classes = (IsOwnerOrIsAdminOrReadOnly, IsAuthenticated, IsAdminUser)
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -259,7 +260,7 @@ class PostViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = (IsOwnerOrReadOnly, IsAuthenticated)
+    permission_classes = (IsOwnerOrIsAdminOrReadOnly, IsAuthenticated, IsAdminUser)
 
     def get_queryset(self):
         queryset = self.queryset
@@ -304,7 +305,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 class LikedListPostsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeListPostSerializer
-    permission_classes = (IsOwnerOrReadOnly, IsAuthenticated)
+    permission_classes = (IsOwnerOrIsAdminOrReadOnly, IsAuthenticated)
 
     def get_queryset(self):
         queryset = self.queryset
@@ -319,7 +320,7 @@ class LikedListPostsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericViewS
 class LikedListCommentsProfileOnlyView(mixins.ListModelMixin, viewsets.GenericViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeListCommentSerializer
-    permission_classes = (IsOwnerOrReadOnly, IsAuthenticated)
+    permission_classes = (IsOwnerOrIsAdminOrReadOnly, IsAuthenticated)
 
     def get_queryset(self):
         queryset = self.queryset
