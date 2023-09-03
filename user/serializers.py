@@ -59,6 +59,13 @@ class FollowsSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        data = super(ProfileSerializer, self).validate(attrs)
+        user = self.context["request"].user
+        if Profile.objects.filter(user=user).exists():
+            raise ValidationError("Profile with this user already exists")
+        return data
+
     class Meta:
         model = Profile
         fields = ("id", "username", "bio")

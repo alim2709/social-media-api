@@ -67,7 +67,9 @@ def profile_picture_file_path(instance, filename):
 
 class Profile(models.Model):
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="profile",
     )
     username = models.CharField(max_length=255, unique=True)
     picture = models.ImageField(
@@ -82,7 +84,7 @@ class Profile(models.Model):
     )
 
     class Meta:
-        ordering = ("username",)
+        ordering = ("id",)
 
     def __str__(self):
         return self.username
