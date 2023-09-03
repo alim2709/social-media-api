@@ -3,6 +3,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, viewsets, status, mixins
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
@@ -94,29 +95,46 @@ class ProfileViewSet(viewsets.ModelViewSet):
             return ProfileListSerializer
         if self.action == "retrieve":
             return ProfileDetailSerializer
-        if self.action == "upload_picture":
-            return ProfilePictureSerializer
-        if self.action == "profile_followers":
-            return FollowersProfileSerializer
-        if self.action == "profile_followings":
-            return FollowingProfileSerializer
         return ProfileSerializer
 
     def perform_create(self, serializer):
+        if self.request.user.profile:
+            raise ValidationError("User profile already exists!!!")
         serializer.save(user=self.request.user)
 
-    @action(methods=["GET"], detail=True, url_path="profile_followers")
+    @action(
+        methods=["GET"],
+        detail=False,
+        url_path="my_profile",
+        serializer_class=ProfileListSerializer,
+    )
+    def my_profile(self, request, pk=None):
+        profile = self.request.user.profile
+        serializer = self.serializer_class(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(
+        methods=["GET"],
+        detail=True,
+        url_path="profile_followers",
+        serializer_class=FollowersProfileSerializer,
+    )
     def profile_followers(self, request, pk=None):
         """Endpoint for list of profile followers"""
         profile = self.get_object()
-        serializer = self.get_serializer(profile, many=False)
+        serializer = self.serializer_class(profile, many=False)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(methods=["GET"], detail=True, url_path="profile_followings")
+    @action(
+        methods=["GET"],
+        detail=True,
+        url_path="profile_followings",
+        serializer_class=FollowingProfileSerializer,
+    )
     def profile_followings(self, request, pk=None):
         """Endpoint for list of profile followings"""
         profile = self.get_object()
-        serializer = self.get_serializer(profile, many=False)
+        serializer = self.serializer_class(profile, many=False)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
@@ -128,6 +146,8 @@ class ProfileViewSet(viewsets.ModelViewSet):
         """Endpoint for following & unfollowing profile"""
         profile = self.get_object()
         user = self.request.user
+        if user.profile and profile.id == user.profile.id:
+            raise ValidationError("You cannot follow by yourself!!!")
         if profile.followers.filter(pk=user.pk).exists():
             profile.followers.remove(user)
             user.profile.following.remove(profile.user)
@@ -140,11 +160,12 @@ class ProfileViewSet(viewsets.ModelViewSet):
         methods=["POST", "DELETE"],
         detail=True,
         url_path="upload-picture",
+        serializer_class=ProfilePictureSerializer,
     )
     def upload_picture(self, request, pk=None):
         """Endpoint for uploading picture to specific profile"""
         profile = self.get_object()
-        serializer = self.get_serializer(profile, data=request.data)
+        serializer = self.serializer_class(profile, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -168,15 +189,13 @@ class PostViewSet(viewsets.ModelViewSet):
             return PostListSerializer
         if self.action == "retrieve":
             return PostDetailSerializer
-        if self.action == "post_like_unlike":
-            return PostLikeSerializer
         return PostSerializer
 
     def get_queryset(self):
         queryset = self.queryset
         following_users = self.request.user.profile.following.all()
         queryset = queryset.select_related("user__profile").filter(
-            Q(user=self.request.user) | Q(user__in=list(following_users))
+            Q(user=self.request.user) | Q(user__in=following_users)
         )
         if self.action == "list":
             queryset = queryset.select_related("user").annotate(
@@ -191,19 +210,28 @@ class PostViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(hashtag__name__icontains=hashtag)
         return queryset.select_related("user").prefetch_related("hashtag").distinct()
 
+    def get_permissions(self):
+        if self.action == "post_like_unlike":
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    @action(methods=["POST"], detail=True, url_path="post_like_unlike")
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="post_like_unlike",
+        serializer_class=PostLikeSerializer,
+    )
     def post_like_unlike(self, request, pk=None):
         """Endpoint for like/unlike posts"""
         post = self.get_object()
         user = self.request.user
-        serializer = self.get_serializer(post, data=request.data)
+
         if not post.likes.filter(user=user).exists():
             Like.objects.create(user=user, post=post)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
+            serializer = self.serializer_class(post)
             return Response(serializer.data, status=status.HTTP_200_OK)
         post.likes.filter(user=user).delete()
         return Response({"status": "unliked"})
@@ -237,7 +265,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         queryset = self.queryset
         following_users = self.request.user.profile.following.all()
         queryset = queryset.filter(
-            Q(user=self.request.user) | Q(user__in=list(following_users))
+            Q(user=self.request.user) | Q(user__in=following_users)
         )
         return queryset.select_related("post__user").prefetch_related(
             "likes__user",
@@ -248,24 +276,26 @@ class CommentViewSet(viewsets.ModelViewSet):
             return CommentListSerializer
         if self.action == "retrieve":
             return CommentDetailSerializer
-        if self.action == "comment_like_unlike":
-            return CommentLikeSerializer
         return CommentSerializer
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    @action(methods=["POST"], detail=True, url_path="comment_like_unlike")
+    @action(
+        methods=["POST"],
+        detail=True,
+        url_path="comment_like_unlike",
+        serializer_class=CommentLikeSerializer,
+    )
     def comment_like_unlike(self, request, pk=None):
         """Endpoint for like/unlike comments"""
         comment = self.get_object()
         user = self.request.user
-        serializer = self.get_serializer(comment, data=request.data)
+
         if not comment.likes.filter(user=user).exists():
             Like.objects.create(user=user, comment=comment)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            serializer = self.serializer_class(comment)
+            return Response({"status": "liked"}, status=status.HTTP_200_OK)
         comment.likes.filter(user=user).delete()
         return Response({"status": "unliked comment"})
 
