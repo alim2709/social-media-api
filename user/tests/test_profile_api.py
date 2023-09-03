@@ -50,6 +50,15 @@ class AuthenticatedProfileApiTests(TestCase):
         self.assertEquals(res.status_code, status.HTTP_200_OK)
         self.assertEquals(res.data["results"], serializer.data)
 
+    def test_profile_create(self):
+        payload = {
+            "username": "testusername",
+            "bio": "testbio",
+        }
+        res = self.client.post(PROFILE_URL, payload)
+
+        self.assertEquals(res.status_code, status.HTTP_201_CREATED)
+
     def test_follow_profile(self):
         profile1 = Profile.objects.create(
             user=self.user, username="test1", bio="testbio1"
