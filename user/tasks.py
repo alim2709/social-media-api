@@ -1,6 +1,7 @@
 from celery import shared_task
 
-from user.models import User, Post, HashTag
+from social_network.models import Post
+from user.models import User
 
 
 @shared_task

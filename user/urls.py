@@ -9,28 +9,12 @@ from user.views import (
     CreateUserView,
     ManageUserView,
     ProfileViewSet,
-    HashTagViewSet,
-    PostViewSet,
-    CommentViewSet,
-    LikedListPostsProfileOnlyView,
-    LikedListCommentsProfileOnlyView,
     LogoutView,
 )
 from rest_framework import routers
 
 router = routers.DefaultRouter()
 router.register("profiles", ProfileViewSet)
-router.register("hashtags", HashTagViewSet)
-router.register("posts", PostViewSet)
-router.register("comments", CommentViewSet)
-router.register(
-    "likes-list-post", LikedListPostsProfileOnlyView, basename="likes-list-post"
-)
-router.register(
-    "likes-list-comment",
-    LikedListCommentsProfileOnlyView,
-    basename="likes-list-comment",
-)
 
 
 urlpatterns = [
