@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import gettext as _
 
-from user.models import User, Profile, Like, Comment, HashTag, Post
+from user.models import User, Profile
 
 
 @admin.register(User)
@@ -41,7 +41,3 @@ class UserAdmin(DjangoUserAdmin):
 
 
 admin.site.register(Profile)
-admin.site.register(Like)
-admin.site.register(Comment)
-admin.site.register(HashTag)
-admin.site.register(Post)
