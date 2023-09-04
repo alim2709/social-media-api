@@ -1,6 +1,6 @@
 from django.db.models import Q, Count
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from rest_framework import generics, viewsets, status, mixins
+from rest_framework import generics, viewsets, status, mixins, serializers
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from user.models import Profile, HashTag, Post, Comment, Like
-from user.permissions import IsOwnerOrIsAdminOrReadOnly
+from user.permissions import IsOwnerOrIsAdminOrReadOnly, IsUserHaveProfile
 from user.serializers import (
     UserSerializer,
     ProfileListSerializer,
@@ -181,7 +181,11 @@ class HashTagViewSet(viewsets.ModelViewSet):
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    permission_classes = (IsOwnerOrIsAdminOrReadOnly, IsAuthenticated)
+    permission_classes = (
+        IsOwnerOrIsAdminOrReadOnly,
+        IsAuthenticated,
+        IsUserHaveProfile,
+    )
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -192,6 +196,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = self.queryset
+
         following_users = self.request.user.profile.following.all()
         queryset = queryset.select_related("user__profile").filter(
             Q(user=self.request.user) | Q(user__in=following_users)
@@ -259,7 +264,11 @@ class PostViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = (IsOwnerOrIsAdminOrReadOnly, IsAuthenticated)
+    permission_classes = (
+        IsOwnerOrIsAdminOrReadOnly,
+        IsAuthenticated,
+        IsUserHaveProfile,
+    )
 
     def get_queryset(self):
         queryset = self.queryset
