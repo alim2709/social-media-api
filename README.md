@@ -9,6 +9,8 @@ Also add creating posts by schedule via Celery.
 
 Python 3 should be installed. Docker should be installed.
 
+Change mocks to your native data inside .env.sample. Do not forget to change file name to ".env".
+
     https://github.com/alim2709/social-media-api.git
     cd social_media_api
     python -m venv venv
