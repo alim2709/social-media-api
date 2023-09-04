@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "rest_framework_simplejwt.token_blacklist",
     "user",
+    "social_network",
 ]
 
 MIDDLEWARE = [
